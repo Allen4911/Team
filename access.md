@@ -13,23 +13,64 @@
 
 ---
 
+## Telegram 설정
+
+| 항목 | 값 |
+|---|---|
+| Chat ID | `56518471` |
+| Bot Token | `8702519581:AAG...Vvqo` (openclaw config에 저장) |
+| OpenClaw 채널 | `telegram` |
+
+### 텔레그램 명령어 요약
+
+| 명령어 | 대상 |
+|--------|------|
+| `@cc 메시지` | Pane 0 쭌 (기본값) |
+| `@cc @민준 메시지` | Pane 1 민준 |
+| `@cc @지훈 메시지` | Pane 2 지훈 |
+| `@cc @수아 메시지` | Pane 3 수아 |
+| `@cc @서연 메시지` | Pane 4 서연 |
+| `@cc @태양 메시지` | Pane 5 태양 |
+| `@cc @all 메시지` | 전체 브로드캐스트 |
+| `@ccn @멤버 메시지` | 컨텍스트 초기화 후 전달 |
+| `@ccu` | 사용량 확인 |
+
+### 브릿지 관련 경로
+
+```
+~/.openclaw/bridge-scripts/     ← pane 라우팅 스크립트
+~/.openclaw/plugins/claude-bridge/  ← OpenClaw 플러그인
+~/openclaw-claude-bridge/       ← 소스 저장소
+```
+
+### 브릿지 재설치
+
+```bash
+bash ~/openclaw-claude-bridge/setup-team.sh
+```
+
+---
+
 ## SSH 접속 정보
 
 ### 외부에서 접속
+
 ```bash
 ssh user@192.168.1.15 -p 2222
 # 비밀번호: user
 ```
 
 ### WSL 내부에서 접속
+
 ```bash
 ssh user@172.23.66.222
 # 비밀번호: user
 ```
 
 ### TMUX 팀 세션 복구
+
 ```bash
-tmux attach -t 2
+tmux attach -t team
 # 또는 전체 재구성
 bash /mnt/c/Dev/Team/setup-team.sh
 ```
@@ -41,7 +82,6 @@ bash /mnt/c/Dev/Team/setup-team.sh
 WSL2 재시작 후 IP가 바뀌면 아래 스크립트로 재설정:
 
 ```powershell
-# WSL2 현재 IP 자동 감지 후 포트포워딩 재설정
 $wslIp = (wsl hostname -I).Trim().Split(" ")[0]
 
 netsh interface portproxy delete v4tov4 listenport=2222 listenaddress=0.0.0.0
@@ -54,20 +94,11 @@ Write-Host "포트포워딩 완료: $wslIp -> 2222"
 netsh interface portproxy show all
 ```
 
-### 설정 확인
-```powershell
-netsh interface portproxy show all
-netsh advfirewall firewall show rule name="WSL2 SSH"
-```
-
 ---
 
 ## sudo 자동 실행 권한
 
-아래 명령들은 비밀번호 없이 실행 가능하도록 설정 권장:
-
 ```bash
-# /etc/sudoers.d/user-nopasswd 파일 생성 (WSL에서 실행)
 echo "user ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/user-nopasswd
 sudo chmod 440 /etc/sudoers.d/user-nopasswd
 ```
@@ -77,42 +108,15 @@ sudo chmod 440 /etc/sudoers.d/user-nopasswd
 ## SSH 서비스 관리
 
 ```bash
-# 시작
-sudo service ssh start
-
-# 상태 확인
-sudo service ssh status
-
-# 재시작
-sudo service ssh restart
-
-# 설정 파일 위치
-/etc/ssh/sshd_config
+sudo service ssh start    # 시작
+sudo service ssh status   # 상태 확인
+sudo service ssh restart  # 재시작
 ```
-
-### 주요 SSH 설정 (sshd_config)
-| 항목 | 값 |
-|---|---|
-| Port | 22 |
-| PasswordAuthentication | yes |
-| PermitRootLogin | prohibit-password |
 
 ---
 
 ## WSL2 재시작 후 체크리스트
 
 1. `sudo service ssh start` — SSH 서비스 시작
-2. `hostname -I` — 현재 WSL2 IP 확인
-3. Windows 관리자 PowerShell에서 포트포워딩 재설정 (IP 변경 시)
-4. `tmux attach -t 2` 또는 `bash /mnt/c/Dev/Team/setup-team.sh`
-
----
-
-## 파일 구조
-
-```
-C:\Dev\Team\
-├── README.md       ← 팀 구성 & TMUX 설정 가이드
-├── access.md       ← 이 파일 (접근 권한 & SSH 설정)
-└── setup-team.sh   ← 원클릭 팀 환경 자동 설정
-```
+2. `hostname -I` — WSL2 IP 확인 (변경 시 Windows 포트포워딩 재설정)
+3. `bash /mnt/c/Dev/Team/setup-team.sh` — 팀 환경 + Telegram 브릿지 재설정

@@ -8,20 +8,21 @@
 
 ```
 앨런 (실제 사용자)
-  → OpenClaw / 쭌 (전달 채널)
-    → 다은 (팀장, Claude — Pane 0)
-      → 팀원들 (Pane 1~5)
+  → 텔레그램 (@cc @멤버 메시지)
+    → OpenClaw 플러그인 (claude-bridge)
+      → TMUX team 세션 (해당 pane)
+        → Claude CLI 처리
+          → 응답 → 텔레그램 🔗
 ```
 
 ---
 
 ## 팀 구성
 
-| 파인 | 이름 | 역할 | 설명 |
-|---|---|---|---|
-| — | **앨런** | 실제 사용자 | 최종 지시자, OpenClaw로 전달 |
-| — | **쭌 / OpenClaw** | 전달 채널 | 앨런 → 다은 사이 메시지 전달 도구 |
-| Pane 0 | **다은** | **팀장 (Claude)** | 팀 총괄, 팀원 지시 및 조율 |
+| Pane | 이름 | 역할 | 설명 |
+|------|------|------|------|
+| — | **앨런** | 실제 사용자 | 텔레그램으로 지시 |
+| Pane 0 | **쭌** | 사용자/팀장 | Claude — 팀 총괄 (기본 라우팅 대상) |
 | Pane 1 | 민준 | PM · 아키텍트 | 프로젝트 관리, 시스템 설계 |
 | Pane 2 | 지훈 | 리서쳐 | 정보 수집, 기술 조사 |
 | Pane 3 | 수아 | 디자이너 | UI/UX, 사용자 경험 설계 |
@@ -32,11 +33,15 @@
 
 ## 환경 정보
 
-- **OS**: Ubuntu 24.04 (WSL2)
-- **TMUX**: 3.4
-- **Claude Code**: 2.1.71
-- **Model**: Claude Sonnet 4.6
-- **OpenClaw**: 2026.3.2
+| 항목 | 값 |
+|------|-----|
+| OS | Ubuntu 24.04 (WSL2) |
+| TMUX | 3.4 |
+| Claude Code | 2.1.71 |
+| OpenClaw | 2026.3.2 |
+| 텔레그램 chat ID | 56518471 |
+| 브릿지 스크립트 | `~/.openclaw/bridge-scripts/` |
+| 브릿지 플러그인 | `~/.openclaw/plugins/claude-bridge/` |
 
 ---
 
@@ -44,6 +49,45 @@
 
 ```bash
 bash /mnt/c/Dev/Team/setup-team.sh
+```
+
+TMUX 세션 + Claude CLI(Pane 1~5) + Telegram 브릿지를 한 번에 설정합니다.
+
+---
+
+## 텔레그램 명령어
+
+| 명령어 | 대상 |
+|--------|------|
+| `@cc 메시지` | Pane 0 쭌 (기본값) |
+| `@cc @쭌 메시지` | Pane 0 쭌 |
+| `@cc @민준 메시지` | Pane 1 민준 |
+| `@cc @지훈 메시지` | Pane 2 지훈 |
+| `@cc @수아 메시지` | Pane 3 수아 |
+| `@cc @서연 메시지` | Pane 4 서연 |
+| `@cc @태양 메시지` | Pane 5 태양 |
+| `@cc @all 메시지` | 전체 브로드캐스트 (모든 pane) |
+| `@ccn @멤버 메시지` | 해당 pane 컨텍스트 초기화 후 전달 |
+| `@ccu` | Claude 사용량 확인 |
+
+> `/cc`도 `@cc`와 동일하게 동작합니다.
+
+---
+
+## 레이아웃 구성도
+
+```
+┌─────────────────────────┬─────────────────────────┐
+│                         │   민준 PM·아키텍트  [1]  │
+│                         ├─────────────────────────┤
+│      쭌 (팀장) [0]      │   지훈 리서쳐       [2]  │
+│      Claude CLI         ├─────────────────────────┤
+│      158 x 84           │   수아 디자이너     [3]  │
+│                         ├─────────────────────────┤
+│                         │   서연 개발자       [4]  │
+│                         ├─────────────────────────┤
+│                         │   태양 리뷰어       [5]  │
+└─────────────────────────┴─────────────────────────┘
 ```
 
 ---
@@ -55,6 +99,7 @@ bash /mnt/c/Dev/Team/setup-team.sh
 ```bash
 tmux -V
 claude --version
+openclaw --version
 ```
 
 ### 2. TMUX 세션 생성
@@ -66,45 +111,53 @@ tmux new-session -d -s team -x 317 -y 85
 ### 3. 레이아웃 구성
 
 ```bash
-# 우측 파인 5개 분할
 tmux split-window -t team:0.0 -h
 tmux split-window -t team:0.1 -v
 tmux split-window -t team:0.2 -v
 tmux split-window -t team:0.3 -v
 tmux split-window -t team:0.4 -v
 
-# 메인 파인 너비 50%
-tmux resize-pane -t team:0.0 -x 158
-
-# 파인 제목 표시
+tmux select-layout -t team:0 main-vertical
+tmux set-option -t team main-pane-width 158
 tmux set-option -t team pane-border-status top
 tmux set-option -t team pane-border-format " #{pane_title} "
 tmux set-option -t team allow-rename off
 ```
 
-### 4. 파인 이름 설정
+### 4. pane 이름 설정
 
 ```bash
-tmux select-pane -t team:0.0 -T "다은 (팀장)"
+tmux select-pane -t team:0.0 -T "쭌"
 tmux select-pane -t team:0.1 -T "민준 PM·아키텍트"
 tmux select-pane -t team:0.2 -T "지훈 리서쳐"
-tmux select-pane -t team:0.3 -T "수아 디자이너"
+tmux select-pane -t team:0.3 -T "디자이너 수아"
 tmux select-pane -t team:0.4 -T "서연 개발자"
 tmux select-pane -t team:0.5 -T "태양 리뷰어"
 ```
 
-### 5. 각 파인에서 Claude 실행
+### 5. Claude CLI 실행 (각 pane)
 
 ```bash
-for pane in 0 1 2 3 4 5; do
-  tmux send-keys -t "team:0.$pane" 'claude' Enter
-  sleep 2
-  tmux send-keys -t "team:0.$pane" '' Enter
-  sleep 3
+# 각 pane에서 실행 (pane 1~5)
+# 다이얼로그 1: Enter (Yes, I trust this folder)
+# 다이얼로그 2: 아래 방향키 → Enter (Yes, I accept)
+for pane in 1 2 3 4 5; do
+    tmux send-keys -t "team:0.$pane" \
+        "cd /home/user && unset CLAUDECODE && claude --dangerously-skip-permissions" Enter
 done
 ```
 
-### 6. 세션 attach
+### 6. Telegram 브릿지 설정
+
+```bash
+# 저장소가 없으면 클론
+git clone https://github.com/bettep-dev/openclaw-claude-bridge.git ~/openclaw-claude-bridge
+
+# 팀 브릿지 설치 (스크립트, 플러그인, CLAUDE.md, openclaw.json 자동 설정)
+bash ~/openclaw-claude-bridge/setup-team.sh
+```
+
+### 7. 세션 접속
 
 ```bash
 tmux attach -t team
@@ -112,39 +165,23 @@ tmux attach -t team
 
 ---
 
-## 레이아웃 구성도
+## 팀 운영 — 터미널에서 직접 pane 제어
 
-```
-┌─────────────────────────┬─────────────────────────┐
-│                         │   민준 PM·아키텍트       │
-│                         ├─────────────────────────┤
-│     다은 (팀장)          │   지훈 리서쳐            │
-│     Claude — Pane 0     ├─────────────────────────┤
-│       158 x 84          │   수아 디자이너           │
-│                         ├─────────────────────────┤
-│                         │   서연 개발자             │
-│                         ├─────────────────────────┤
-│                         │   태양 리뷰어             │
-└─────────────────────────┴─────────────────────────┘
-        ↑
-앨런 → OpenClaw/쭌 → 다은
-```
+### 특정 pane에 메시지 보내기
 
----
-
-## 팀 운영 방법
-
-### 개별 파인에 지시 보내기
 ```bash
-tmux send-keys -t team:0.2 '지훈, ○○에 대해 조사해주세요' Enter
-tmux send-keys -t team:0.4 '서연, ○○ 기능을 구현해주세요' Enter
+tmux send-keys -t team:0.2 '지훈, ○○에 대해 조사해줘' Enter
+tmux send-keys -t team:0.4 '서연, ○○ 기능 구현해줘' Enter
 ```
 
-### 모든 팀원에게 동시 전달
+### 브릿지 스크립트 직접 실행
+
 ```bash
-for pane in 1 2 3 4 5; do
-  tmux send-keys -t "team:0.$pane" '전달할 메시지' Enter
-done
+# pane N에 메시지 전송
+bash ~/.openclaw/bridge-scripts/claude-send.sh 2 "지훈, 조사 부탁해"
+
+# 전체 브로드캐스트
+bash ~/.openclaw/bridge-scripts/claude-team-broadcast.sh "모두 현황 보고해줘"
 ```
 
 ---
@@ -153,7 +190,20 @@ done
 
 ```
 C:\Dev\Team\
-├── README.md       ← 팀 구성 & TMUX 설정 가이드 (이 파일)
-├── access.md       ← 접근 권한 & SSH 설정
-└── setup-team.sh   ← 원클릭 자동 설정 스크립트
+├── README.md            ← 팀 구성 & 설정 가이드 (이 파일)
+├── access.md            ← 접근 권한 & SSH & Telegram 설정
+├── setup-team.sh        ← 원클릭 자동 설정 (TMUX + Claude + Telegram)
+└── auto-settings.md     ← 자동화 설정 참고
+
+~/.openclaw/
+├── bridge-scripts/      ← pane 라우팅 쉘 스크립트
+│   ├── claude-send.sh           (특정 pane에 전송)
+│   ├── claude-new-session.sh    (컨텍스트 초기화 후 전송)
+│   ├── claude-team-broadcast.sh (전체 브로드캐스트)
+│   ├── claude-session.sh        (세션 keepalive)
+│   └── claude-usage.sh          (사용량 확인)
+└── plugins/claude-bridge/   ← OpenClaw 플러그인 (메시지 감지 & 라우팅)
+
+~/openclaw-claude-bridge/   ← 브릿지 소스 (github.com/bettep-dev/openclaw-claude-bridge)
+└── setup-team.sh            ← 브릿지 단독 재설치 스크립트
 ```
