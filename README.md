@@ -39,6 +39,7 @@
 | TMUX | 3.4 |
 | Claude Code | 2.1.71 |
 | OpenClaw | 2026.3.2 |
+| RTK | 0.27.2 (`~/.local/bin/rtk`) |
 | 텔레그램 chat ID | 56518471 |
 | 브릿지 스크립트 | `~/.openclaw/bridge-scripts/` |
 | 브릿지 플러그인 | `~/.openclaw/plugins/claude-bridge/` |
@@ -193,7 +194,8 @@ C:\Dev\Team\
 ├── README.md            ← 팀 구성 & 설정 가이드 (이 파일)
 ├── access.md            ← 접근 권한 & SSH & Telegram 설정
 ├── setup-team.sh        ← 원클릭 자동 설정 (TMUX + Claude + Telegram)
-└── auto-settings.md     ← 자동화 설정 참고
+├── auto-settings.md     ← 자동화 설정 참고
+└── rtk.md               ← RTK (Rust Token Killer) 설정 가이드
 
 ~/.openclaw/
 ├── bridge-scripts/      ← pane 라우팅 쉘 스크립트
