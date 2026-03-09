@@ -148,7 +148,7 @@ echo "  (다이얼로그 자동 처리 — pane당 최대 1분 소요)"
 
 MEMBER_NAMES=("쭌" "민준" "지훈" "수아" "서연" "태양")
 
-for pane in 1 2 3 4 5; do
+for pane in 0 1 2 3 4 5; do
     echo -n "  Pane $pane (${MEMBER_NAMES[$pane]}): 시작 중..."
     start_claude_in_pane "$SESSION:0.$pane"
 
